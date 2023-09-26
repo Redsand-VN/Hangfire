@@ -75,7 +75,15 @@ namespace Hangfire.Client
 
         private BackgroundJob CreateBackgroundJobTwoSteps(CreateContext context, Dictionary<string, string> parameters, DateTime createdAt, TimeSpan expireIn)
         {
-            var attemptsLeft = Math.Max(RetryAttempts, 0);
+           var attemptsLeft = Math.Max(RetryAttempts, 0);
+            JobStorage hostedStorage = default;
+
+            if (context.Items.ContainsKey(JobStorage.JobStorageItemKey))
+            {
+                hostedStorage = (JobStorage)context.Items[JobStorage.JobStorageItemKey];
+            }
+
+            var connection = hostedStorage?.GetConnection() ?? context.Connection;
 
             // Retry may cause multiple background jobs to be created, especially when there's
             // a timeout-related exception. But initialization attempt will be performed only
@@ -84,7 +92,7 @@ namespace Hangfire.Client
             // identifiers. Since they also will be eventually expired leaving no trace, we can
             // consider that only one background job is created, regardless of retry attempts
             // number.
-            var jobId = RetryOnException(ref attemptsLeft, _ => context.Connection.CreateExpiredJob(
+            var jobId = RetryOnException(ref attemptsLeft, _ => /* context.Connection */connection.CreateExpiredJob(
                 context.Job,
                 parameters,
                 createdAt,
@@ -115,11 +123,13 @@ namespace Hangfire.Client
                         if (!String.IsNullOrEmpty(data.State)) return;
                     }
 
-                    using (var transaction = context.Connection.CreateWriteTransaction())
+                    var storage = hostedStorage ?? context.Storage;
+
+                    using (var transaction = connection.CreateWriteTransaction())
                     {
                         var applyContext = new ApplyStateContext(
-                            context.Storage,
-                            context.Connection,
+                            storage,
+                            connection,
                             transaction,
                             backgroundJob,
                             context.InitialState,

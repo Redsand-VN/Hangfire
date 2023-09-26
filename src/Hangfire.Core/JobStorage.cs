@@ -26,6 +26,7 @@ namespace Hangfire
 {
     public abstract class JobStorage
     {
+        public const string JobStorageItemKey = "StorageByHostName";
         private static readonly object LockObject = new object();
         private static JobStorage _current;
 
