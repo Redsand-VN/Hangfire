@@ -17,6 +17,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Hangfire.Annotations;
+using Hangfire.Custom;
 using Hangfire.Logging;
 using Hangfire.Server;
 using Hangfire.States;
@@ -26,6 +27,9 @@ namespace Hangfire
 {
     public abstract class JobStorage
     {
+        internal static IRecurringJobExpandable RecurringJobPreprocessor { get; set; }
+        public const string RecurringJobStorage = "RecurringJobStorage";
+
         public const string JobStorageItemKey = "StorageByHostName";
         private static readonly object LockObject = new object();
         private static JobStorage _current;

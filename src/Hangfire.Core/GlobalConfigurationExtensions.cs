@@ -19,6 +19,7 @@ using System.Globalization;
 using System.Reflection;
 using Hangfire.Annotations;
 using Hangfire.Common;
+using Hangfire.Custom;
 using Hangfire.Dashboard;
 using Hangfire.Dashboard.Pages;
 using Hangfire.Logging;
@@ -51,7 +52,12 @@ namespace Hangfire
             configuration.Entry.JobExpirationTimeout = timeout;
             return configuration;
         }
-
+        public static IGlobalConfiguration<T> UseRecurringJobExpandablePoint<T>([NotNull] this IGlobalConfiguration configuration, [NotNull] T expander) where T : IRecurringJobExpandable
+        {
+            if (configuration == null) throw new ArgumentNullException(nameof(configuration));
+            if (expander == null) throw new ArgumentNullException(nameof(expander));
+            return configuration.Use(expander, x => JobStorage.RecurringJobPreprocessor = x);
+        }
         public static IGlobalConfiguration<TActivator> UseActivator<TActivator>(
             [NotNull] this IGlobalConfiguration configuration,
             [NotNull] TActivator activator)
@@ -78,7 +84,7 @@ namespace Hangfire
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
             if (provider == null) throw new ArgumentNullException(nameof(provider));
-            
+
             return configuration.Use(provider, x => LogProvider.SetCurrentLogProvider(x));
         }
 
@@ -163,7 +169,7 @@ namespace Hangfire
 #endif
 
         public static IGlobalConfiguration<TFilter> UseFilter<TFilter>(
-            [NotNull] this IGlobalConfiguration configuration, 
+            [NotNull] this IGlobalConfiguration configuration,
             [NotNull] TFilter filter)
         {
             if (configuration == null) throw new ArgumentNullException(nameof(configuration));
@@ -173,7 +179,7 @@ namespace Hangfire
         }
 
         public static IGlobalConfiguration<TFilterProvider> UseFilterProvider<TFilterProvider>(
-            [NotNull] this IGlobalConfiguration configuration, 
+            [NotNull] this IGlobalConfiguration configuration,
             [NotNull] TFilterProvider filterProvider)
             where TFilterProvider : IJobFilterProvider
         {

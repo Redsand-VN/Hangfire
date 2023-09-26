@@ -33,7 +33,7 @@ namespace Hangfire
 
         private readonly ILog _logger = LogProvider.GetLogger(typeof(RecurringJobManager));
 
-        private readonly JobStorage _storage;
+        private /* readonly */ JobStorage _storage;
         private readonly IBackgroundJobFactory _factory;
         private readonly Func<DateTime> _nowFactory;
         private readonly ITimeZoneResolver _timeZoneResolver;
@@ -54,7 +54,7 @@ namespace Hangfire
         }
 
         public RecurringJobManager(
-            [NotNull] JobStorage storage, 
+            [NotNull] JobStorage storage,
             [NotNull] IJobFilterProvider filterProvider,
             [NotNull] ITimeZoneResolver timeZoneResolver)
             : this(storage, filterProvider, timeZoneResolver, () => DateTime.UtcNow)
@@ -62,8 +62,8 @@ namespace Hangfire
         }
 
         public RecurringJobManager(
-            [NotNull] JobStorage storage, 
-            [NotNull] IJobFilterProvider filterProvider, 
+            [NotNull] JobStorage storage,
+            [NotNull] IJobFilterProvider filterProvider,
             [NotNull] ITimeZoneResolver timeZoneResolver,
             [NotNull] Func<DateTime> nowFactory)
             : this(storage, new BackgroundJobFactory(filterProvider), timeZoneResolver, nowFactory)
@@ -81,10 +81,11 @@ namespace Hangfire
         }
 
         internal RecurringJobManager(
-            [NotNull] JobStorage storage, 
+            [NotNull] JobStorage storage,
             [NotNull] IBackgroundJobFactory factory,
             [NotNull] ITimeZoneResolver timeZoneResolver,
-            [NotNull] Func<DateTime> nowFactory)
+            [NotNull] Func<DateTime> nowFactory
+            )
         {
             _storage = storage ?? throw new ArgumentNullException(nameof(storage));
             _factory = factory ?? throw new ArgumentNullException(nameof(factory));
@@ -107,12 +108,19 @@ namespace Hangfire
             {
                 throw new NotSupportedException("Current storage doesn't support specifying queues directly for a specific job. Please use the QueueAttribute instead.");
             }
+            JobStorage.RecurringJobPreprocessor?.AddJobArgument(job);
 
-            using (var connection = _storage.GetConnection())
+            JobStorage storage = default;
+
+            if (job.ExtraArgs.TryGetValue(JobStorage.RecurringJobStorage, out var recurringJobStorage))
+                if (recurringJobStorage is JobStorage storage1) storage = storage1;
+
+            if (storage != default) _storage = storage;
+
+            using (var connection = /* storage != default ? storage.GetConnection() : */ _storage.GetConnection())
             using (connection.AcquireDistributedRecurringJobLock(recurringJobId, DefaultTimeout))
             {
                 var recurringJob = connection.GetOrCreateRecurringJob(recurringJobId, _timeZoneResolver, _nowFactory());
-
                 recurringJob.Job = job;
                 recurringJob.Cron = cronExpression;
                 recurringJob.TimeZone = options.TimeZone;
@@ -131,7 +139,7 @@ namespace Hangfire
                 }
             }
         }
- 
+
         private static void ValidateCronExpression(string cronExpression)
         {
             try

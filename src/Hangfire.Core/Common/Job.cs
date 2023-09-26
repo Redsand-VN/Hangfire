@@ -180,7 +180,7 @@ namespace Hangfire.Common
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (method == null) throw new ArgumentNullException(nameof(method));
             if (args == null) throw new ArgumentNullException(nameof(args));
-            
+
             Validate(type, nameof(type), method, nameof(method), args.Count, nameof(args));
 
             if (queue != null)
@@ -193,7 +193,8 @@ namespace Hangfire.Common
             Args = args;
             Queue = queue;
         }
-
+        // Rs Custom
+        public Dictionary<string, object> ExtraArgs { get; } = new Dictionary<string, object>();
         /// <summary>
         /// Gets the metadata of a type that contains a method that should be 
         /// invoked during the performance.
@@ -445,9 +446,9 @@ namespace Hangfire.Common
         }
 
         private static void Validate(
-            Type type, 
+            Type type,
             [InvokerParameterName] string typeParameterName,
-            MethodInfo method, 
+            MethodInfo method,
             // ReSharper disable once UnusedParameter.Local
             [InvokerParameterName] string methodParameterName,
             // ReSharper disable once UnusedParameter.Local
@@ -509,7 +510,7 @@ namespace Hangfire.Common
                 }
 
                 var parameterTypeInfo = parameter.ParameterType.GetTypeInfo();
-                
+
                 if (parameterTypeInfo.IsSubclassOf(typeof(Delegate)) || parameterTypeInfo.IsSubclassOf(typeof(Expression)))
                 {
                     throw new NotSupportedException(
