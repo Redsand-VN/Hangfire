@@ -200,7 +200,7 @@ namespace Hangfire
                                 "Triggered using recurring job manager",
                                 EmptyProfiler.Instance);
                         }
-
+                       
                         transaction.UpdateRecurringJob(recurringJob, changedFields, nextExecution, _logger);
                         transaction.Commit();
                     }
