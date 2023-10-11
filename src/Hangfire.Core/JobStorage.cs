@@ -29,12 +29,27 @@ namespace Hangfire
     {
         internal static IRecurringJobExpandable RecurringJobPreprocessor { get; set; }
         public const string RecurringJobStorage = "RecurringJobStorage";
-
         public const string JobStorageItemKey = "StorageByHostName";
+        public const string FakeHttpContextKey = "FakeHttpContext";
         private static readonly object LockObject = new object();
         private static JobStorage _current;
-
+         // private static Type _type;
         private TimeSpan _jobExpirationTimeout = TimeSpan.FromDays(1);
+
+         // public static Type FakeHttpContextType
+         // {
+         //    get {
+         //       lock (LockObject)
+         //       {
+         //          return _type;  
+         //       }
+         //    }
+         //    set{
+         //       lock (LockObject) {
+         //          _type = value;
+         //       }
+         //    }
+         // }
 
         public static JobStorage Current
         {

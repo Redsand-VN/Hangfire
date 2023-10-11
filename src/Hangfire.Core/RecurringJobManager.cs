@@ -108,7 +108,8 @@ namespace Hangfire
             {
                 throw new NotSupportedException("Current storage doesn't support specifying queues directly for a specific job. Please use the QueueAttribute instead.");
             }
-            JobStorage.RecurringJobPreprocessor?.AddJobArgument(job);
+            
+            JobStorage.RecurringJobPreprocessor?.AddExtraJobArgument(job);
 
             JobStorage storage = default;
 
@@ -117,11 +118,16 @@ namespace Hangfire
 
             if (storage != default) _storage = storage;
 
-            using (var connection = /* storage != default ? storage.GetConnection() : */ _storage.GetConnection())
+            
+            using (var connection = _storage.GetConnection())
             using (connection.AcquireDistributedRecurringJobLock(recurringJobId, DefaultTimeout))
             {
                 var recurringJob = connection.GetOrCreateRecurringJob(recurringJobId, _timeZoneResolver, _nowFactory());
                 recurringJob.Job = job;
+                if(job.ExtraArgs.TryGetValue(JobStorage.FakeHttpContextKey, out var fakeHttpRequestContext))
+                {
+                     recurringJob.FakeHttpRequestContext = fakeHttpRequestContext;  
+                  }  
                 recurringJob.Cron = cronExpression;
                 recurringJob.TimeZone = options.TimeZone;
 #pragma warning disable 618

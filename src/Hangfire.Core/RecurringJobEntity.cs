@@ -48,6 +48,10 @@ namespace Hangfire
                 Queue = queue;
             }
 
+            if(recurringJob.TryGetValue("FakeHttpRequestContext", out var fakeHttpRequestContext) && !string.IsNullOrWhiteSpace(fakeHttpRequestContext))
+            {
+                FakeHttpRequestContext = fakeHttpRequestContext;
+            }
             try
             {
                 TimeZone = recurringJob.TryGetValue("TimeZoneId", out var timeZoneId) && !String.IsNullOrWhiteSpace(timeZoneId)
@@ -126,11 +130,12 @@ namespace Hangfire
                 RetryAttempt = retryAttempt;
             }
         }
-
+         
         public string RecurringJobId { get; }
 
         public string Queue { get; set; }
         public string Cron { get; set; }
+        public object FakeHttpRequestContext { get; set; }
         public TimeZoneInfo TimeZone { get; set; }
         public Job Job { get; set; }
         public MisfireHandlingMode MisfireHandling { get; set; }
@@ -271,6 +276,14 @@ namespace Hangfire
                 serializedLastExecution)
             {
                 result.Add("LastExecution", serializedLastExecution ?? String.Empty);
+            }
+
+            // customized - Redsand
+            var serializedFakeHttpRequestContext = SerializationHelper.Serialize(FakeHttpRequestContext, SerializationOption.User);
+
+            if((serializedFakeHttpRequestContext != null && _recurringJob.TryGetValue("FakeHttpRequestContext", out var fakeHttpRequestContext) ? fakeHttpRequestContext : null) != serializedFakeHttpRequestContext)
+            {
+                result.Add("FakeHttpRequestContext", serializedFakeHttpRequestContext);
             }
 
             var timeZoneChanged = !TimeZone.Id.Equals(
